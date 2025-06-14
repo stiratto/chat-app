@@ -1,10 +1,14 @@
-import React, { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
-import App from './App.tsx'
+import { UserContextProvider } from './context/UserContext.tsx'
+import { ChatContextProvider } from './context/ChatContext.tsx'
+import { RouterProvider } from 'react-router'
+import { router } from './router.tsx'
 
 createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <App />
-  </StrictMode>,
+  <UserContextProvider>
+    <ChatContextProvider>
+      <RouterProvider router={router}/>
+    </ChatContextProvider>
+  </UserContextProvider>
 )
