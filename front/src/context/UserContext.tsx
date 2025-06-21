@@ -1,8 +1,12 @@
 import { createContext, useContext, useEffect, useState } from "react";
 
+interface TUser {
+   id: string
+}
+
 interface ContextType {
-   userId: string | null,
-   setUserId: React.Dispatch<React.SetStateAction<string | null>>
+   user: TUser | null,
+   setUser: React.Dispatch<React.SetStateAction<TUser | null>>,
 }
 
 const UserContext = createContext<ContextType>({} as ContextType)
@@ -12,24 +16,39 @@ export const useUserContext = () => {
    return c
 }
 
-
-
-export const UserContextProvider = ({children}: {children: React.ReactNode}) => {
-   const [userId, setUserId] = useState<string | null>(() => {
-      return localStorage.getItem("id")
+export const UserContextProvider = ({ children }: { children: React.ReactNode }) => {
+   const [user, setUser] = useState<TUser | null>(() => {
+      return JSON.parse(localStorage.getItem("user")!)
    })
 
-   // cuando id cambie (se haga setId desde un componente), guardar
-   // esa id en el localStorage solo si no hay una id
+   const fetchId = async () => {
+      const res = await fetch("http://localhost:4000/getId")
+
+      if (!res.ok) {
+         throw new Error("Couldn't fetch id")
+      }
+      const data = await res.json()
+
+      return data.id
+   }
+
    useEffect(() => {
-      if (userId !== null && !localStorage.getItem("id")) {
-         localStorage.setItem("id", userId)
+      const getId = async () => {
+         const id = await fetchId()
+         const newUser = {
+            id,
+         }
+         setUser(newUser)
+         localStorage.setItem("user", JSON.stringify(newUser))
       }
 
-   }, [userId])
+      if (!user) {
+         getId()
+      }
+   }, [])
 
    return (
-      <UserContext.Provider value={{userId, setUserId}}>
+      <UserContext.Provider value={{ user, setUser }}>
          {children}
       </UserContext.Provider>
    )

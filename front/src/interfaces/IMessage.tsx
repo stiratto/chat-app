@@ -6,5 +6,5 @@ export interface IMessage {
 export interface IChat {
    messages: IMessage[],
    id: string,
-   receiverId: string
+   remoteId: string
 }

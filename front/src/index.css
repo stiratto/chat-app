@@ -1,8 +1,20 @@
+@import url('https://fonts.googleapis.com/css2?family=DotGothic16&display=swap');
 @import "tailwindcss";
+
+
+@layer utilities {
+  .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}
 body {
   background-color: #242424;
   font-size: clamp(1rem, 10vw, 2rem);
-  font-family: 'monospace';
+  font-family: 'DotGothic16';
 }
 
 .host-message {

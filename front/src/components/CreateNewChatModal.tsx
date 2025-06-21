@@ -2,11 +2,12 @@ import { useEffect, useRef, useState, type FormEvent } from "react"
 import { useChatContext } from "../context/ChatContext"
 import type { IChat } from "../interfaces/IMessage"
 import { useUserContext } from "../context/UserContext"
+import { toast } from "sonner"
 
-export function CreateNewChatModal({onClose}: {onClose: () => void}) {
+export function CreateNewChatModal({ onClose }: { onClose: () => void }) {
    const ref = useRef<HTMLDivElement>(null)
-   const {chats, setChats} = useChatContext()
-   const {userId} = useUserContext()
+   const { chats, setChats } = useChatContext()
+   const { user } = useUserContext()
    const [receiverId, setReceiverId] = useState<string>("")
 
    const handleClick = (e: MouseEvent) => {
@@ -19,15 +20,47 @@ export function CreateNewChatModal({onClose}: {onClose: () => void}) {
       setReceiverId(e.target.value)
    }
 
-   const onSubmit = (e: FormEvent) => {
+   const onSubmit = async (e: FormEvent) => {
       e.preventDefault()
-      const newChat: IChat = {
-         receiverId,
-         messages: [],
-         id: userId!,
+
+      const existsRemoteId = await fetch(`http://localhost:4000/checkId?id=${receiverId}`)
+      const data = await existsRemoteId.json()
+      if (!existsRemoteId.ok) {
+         toast.error(data)
+         return
       }
+
+      const alreadyHasChat = chats?.find((chat) => chat.remoteId === receiverId)
+      if (alreadyHasChat) {
+         toast.error("You already have a chat with that id!")
+         return
+      }
+
+      const newChat: IChat = {
+         remoteId: receiverId,
+         messages: [],
+         id: user?.id!,
+      }
+
       setChats((prev) => [...(prev || []), newChat])
+
+      startChat(newChat)
    }
+
+
+   const startChat = async (chat: IChat) => {
+      const res = await fetch("http://localhost:4000/initiateChat", {
+         method: 'POST',
+         body: JSON.stringify(chat)
+      })
+
+      if (!res.ok) return
+
+      const data = await res.json()
+      console.log(data)
+   }
+
+
 
    useEffect(() => {
       document.addEventListener('mousedown', handleClick)

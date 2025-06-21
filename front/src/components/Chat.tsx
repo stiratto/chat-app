@@ -1,32 +1,22 @@
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
+
 import Message from "./Message"
 import { useUserContext } from "../context/UserContext"
 import type { IMessage } from "../interfaces/IMessage"
-import { useChatContext } from "../context/ChatContext"
 import { useParams } from "react-router"
+import { useWebSocketContext } from "../context/WebSocketContext"
+import { useChatContext } from "../context/ChatContext"
 
-export default function() {
-   const {id} = useParams()
+export default function Chat() {
+   const { id } = useParams()
    const [message, setMessage] = useState<string>("")
-   const {userId, setUserId} = useUserContext()
-   const {chats, setChats} = useChatContext()
+   const { user } = useUserContext()
+   const { id: userId } = user!
+   const { chats, setChats } = useChatContext()
    const [messages, setMessages] = useState<IMessage[]>([])
-   const [webSocket, setWebSocket] = useState<WebSocket>()
-   const [receiverUserId, setReceiverUserId] = useState<string>("")
+   const { webSocket } = useWebSocketContext()!
+   const messagesContainerRef = useRef<HTMLDivElement>(null)
 
-   const fetchId = async () => {
-      try {
-         const alreadyHasId = localStorage.getItem("id")
-         if (!alreadyHasId) {
-            const response = await fetch("http://localhost:4000/getId")
-            const data = await response.json()
-            setUserId(data.id)
-            window.location.reload()
-         }
-      }catch(err: any) {
-         throw new Error(`Failed to fetch id: ${err.message}`)
-      }
-   }
 
    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
       setMessage(e.target.value)
@@ -34,92 +24,68 @@ export default function() {
 
    const sendMessage = (e: React.FormEvent<HTMLElement>) => {
       e.preventDefault()
+      if (message.length === 0) return
+
       const newMessage: IMessage = {
          host: "host",
          message: message
-      } 
+      }
+
       setMessages((prev) => [...prev, newMessage])
-      
+
       const newSocketMessage = {
          userId: userId,
          message: message,
-         to: receiverUserId
+         to: id
       }
+
+      const currentChat = chats?.find((chat) => chat.remoteId === id)
+
+      const newChats = chats?.map((chat) => {
+
+         if (chat?.remoteId === currentChat?.remoteId) {
+            return {
+               ...chat,
+               messages: [...chat.messages, newMessage]
+            }
+         }
+         return chat
+      })
+
+
       webSocket?.send(JSON.stringify(newSocketMessage))
-      
+      if (newChats) setChats(newChats)
       setMessage("")
    }
 
 
-   const keyWasPressed = () => {
-      console.log("user is chatting")
-   }
-   
-   const startChat = () => {
-      const ws = new WebSocket(`ws://localhost:4000?id=${userId}`)
-      ws.onopen = () => {
-         console.log("connection opened")
+   useEffect(() => {
+      const currentChat = chats?.find((chat) => chat.remoteId === id)
+      setMessages(currentChat?.messages ?? [])
+      if (messagesContainerRef && messagesContainerRef.current) {
+         messagesContainerRef.current.scrollTop = messagesContainerRef.current?.scrollHeight
       }
 
-     
-      ws.onmessage = (ev) => {
-         const newMessage = {
-            host: "remote" as "remote",
-            message: ev.data as string
-         }
-         setMessages(prev => [...prev, newMessage])
-      }
-
-      setWebSocket(ws)
-   }
-
-
-   const getReceiverId = (e: React.ChangeEvent<HTMLInputElement>) => {
-      setReceiverUserId(e.target.value)
-   }
+   }, [chats])
 
    useEffect(() => {
-      const debounce = setTimeout(async () => {
-         const response = await fetch(`http://localhost:4000/checkId?id=${receiverUserId}`)
-         if (response.status === 400) {
-            console.log("id not found")
-         }
-         const data = await response.json()
-         console.log(data)
-      }, 300)
-
-      return () => {
-         clearTimeout(debounce)
-      }
-   }, [receiverUserId])
-
-   useEffect(() => {
-      document.querySelector(".message-input")?.addEventListener("keydown", keyWasPressed)
-      fetchId() 
-
-      startChat()
-   }, [])
+      messagesContainerRef.current?.scrollTo({ top: messagesContainerRef.current.scrollHeight })
+   }, [messages])
 
    return (
-      <div className="p-8 w-full max-w-3xl h-96 text-white rounded-3xl flex flex-col bg-black shadow-xl relative">
-         <h1>{id}</h1>
-         <div className="messages-container gap-4 w-full max-w-3xl h-96 text-white rounded-3xl flex flex-col shadow-xl relative">
-            {messages?.map((m) => (
-               <Message host={m.host}>{m.message}</Message>
+      <div className="w-full max-w-3xl h-96 text-white flex flex-col bg-[#242424] relative items-center justify-center shadow-4xl border border-[#3e4145] ">
+         <div ref={messagesContainerRef} className="messages-container gap-4 w-full max-w-3xl min-h-full max-h-96 text-white flex flex-col shadow-xl relative overflow-y-scroll pb-24 pt-8 px-4 no-scrollbar">
+            {messages?.map((m, i) => (
+               <Message key={i} host={m.host}>{m.message}</Message>
             ))}
          </div>
 
-         <input 
-            value={receiverUserId} 
-            onChange={getReceiverId} 
-            placeholder="Who will receive this message? (ID)" 
-            className="text-lg outline-none rounded-t-3xl text-black bg-white px-4 py-2 absolute top-0 w-full self-center"></input>
          <form onSubmit={sendMessage} className="absolute bottom-0 self-center w-full">
-            <input 
-               value={message} 
-               disabled={receiverUserId.length === 0}
-               onChange={handleChange} 
-               className="message-input bg-white text-black text-lg  w-full rounded-b-3xl rounded-br-none outline-none py-2 px-4">
+            <input
+               value={message}
+               onChange={handleChange}
+               placeholder="write something"
+               className="message-input bg-[#242424] border-t-1 border-[#3e4145] text-white text-lg  w-full outline-none py-2 px-4 placeholder:text-sm">
             </input>
          </form>
       </div>
