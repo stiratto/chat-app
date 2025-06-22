@@ -10,6 +10,8 @@ export function CreateNewChatModal({ onClose }: { onClose: () => void }) {
    const { user } = useUserContext()
    const [receiverId, setReceiverId] = useState<string>("")
 
+   const HTTP_API_URL = import.meta.env.VITE_HTTP_API_URL
+
    const handleClick = (e: MouseEvent) => {
       if (ref.current && !ref.current.contains(e.target as Node)) {
          onClose()
@@ -23,7 +25,7 @@ export function CreateNewChatModal({ onClose }: { onClose: () => void }) {
    const onSubmit = async (e: FormEvent) => {
       e.preventDefault()
 
-      const existsRemoteId = await fetch(`http://localhost:4000/checkId?id=${receiverId}`)
+      const existsRemoteId = await fetch(`${HTTP_API_URL}/checkId?id=${receiverId}`)
       const data = await existsRemoteId.json()
       if (!existsRemoteId.ok) {
          toast.error(data)
@@ -49,7 +51,7 @@ export function CreateNewChatModal({ onClose }: { onClose: () => void }) {
 
 
    const startChat = async (chat: IChat) => {
-      const res = await fetch("http://localhost:4000/initiateChat", {
+      const res = await fetch(`${HTTP_API_URL}/initiateChat`, {
          method: 'POST',
          body: JSON.stringify(chat)
       })

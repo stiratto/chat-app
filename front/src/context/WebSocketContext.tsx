@@ -1,8 +1,7 @@
-import { createContext, useContext, useEffect, useState, type Dispatch, type ReactNode, type SetStateAction } from "react";
+import { createContext, useContext, useEffect, useRef, useState, type Dispatch, type ReactNode, type SetStateAction } from "react";
 import { useUserContext } from "./UserContext";
 import { useChatContext } from "./ChatContext";
-import type { IChat, IMessage } from "../interfaces/IMessage";
-import { toast } from "sonner";
+import { createHandlers, type Handler } from "../lib/socketEventHandler";
 
 interface TWebSocketContext {
    webSocket: WebSocket | null,
@@ -19,56 +18,43 @@ export const useWebSocketContext = () => {
 
 export const WebSocketContextProvider = ({ children }: { children: ReactNode }) => {
    const [webSocket, setWebSocket] = useState<WebSocket | null>(null)
-   const { user } = useUserContext()
+   const { user, setUser } = useUserContext()
    const { chats, setChats } = useChatContext()
+   const handlers = useRef<Record<string, Handler>>({})
+
+   useEffect(() => {
+      const handlersCreated = createHandlers({ setChats, chats, setUser, user })
+      handlers.current = handlersCreated
+   }, [chats, user])
 
    useEffect(() => {
       if (!user) return
       const { id } = user
       if (webSocket) return
-      const socket = new WebSocket(`ws://localhost:4000/connect?userId=${id}`)
+      const SOCKET_API_URL = import.meta.env.VITE_SOCKET_API_URL
+
+      const socket = new WebSocket(`${SOCKET_API_URL}/connect?userId=${id}`)
       setWebSocket(socket)
+
+      // we can use useRef() (it has the most recent value no matter
+      // what, doesn't relies on re-renders)
+      // or use the context directly but state getters would be
+      // obsolete always, just setters would be useful if we pass the
+      // context manually to the createHandlers in this useEffect,
+      // this is because we would be instantiating createHandlers in
+      // the moment this effects runs, the getters would have the data
+      // of this moment, like a snapshot of this and only moment, so
+      // it's just better to use useRef()
+      //
 
       socket.onmessage = (ev) => {
          const data = JSON.parse(ev.data)
-         if (data.type === "new_chat") {
-            console.log(data)
-            const newChat: IChat = {
-               remoteId: data.from,
-               id: user.id,
-               messages: []
-            }
-            console.log(newChat)
-            setChats((prev) => prev ? [...prev, newChat] : [newChat])
-         } else if (data.type === "new_message") {
-
-            toast.success("New message")
-
-            const newMessage: IMessage = {
-               host: "remote",
-               message: data.message
-            }
-
-            const foundChat = chats?.find((chat) => chat.remoteId === data.from)
-
-            if (!foundChat) return
-
-            // actualizar el chat que tiene esa id
-            const newChats = chats?.map((chat) => {
-               if (chat.remoteId === data.from) {
-                  const updatedMessages = [...(chat.messages ?? []), { ...newMessage }]
-                  return {
-                     ...chat,
-                     messages: updatedMessages
-                  }
-
-               }
-               return chat
-            })
-
-            if (newChats) setChats(newChats)
-         }
+         const { current: executeHandler } = handlers
+         const handler = executeHandler[data.type]
+         handler(data)
       }
+
+
    }, [user])
 
    return (

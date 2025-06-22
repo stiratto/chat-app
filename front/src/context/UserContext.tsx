@@ -4,12 +4,12 @@ interface TUser {
    id: string
 }
 
-interface ContextType {
+export interface TUserContext {
    user: TUser | null,
    setUser: React.Dispatch<React.SetStateAction<TUser | null>>,
 }
 
-const UserContext = createContext<ContextType>({} as ContextType)
+const UserContext = createContext<TUserContext>({} as TUserContext)
 
 export const useUserContext = () => {
    const c = useContext(UserContext)
@@ -17,12 +17,10 @@ export const useUserContext = () => {
 }
 
 export const UserContextProvider = ({ children }: { children: React.ReactNode }) => {
-   const [user, setUser] = useState<TUser | null>(() => {
-      return JSON.parse(localStorage.getItem("user")!)
-   })
-
+   const HTTP_API_URL = import.meta.env.VITE_HTTP_API_URL
    const fetchId = async () => {
-      const res = await fetch("http://localhost:4000/getId")
+
+      const res = await fetch(`${HTTP_API_URL}/getId`)
 
       if (!res.ok) {
          throw new Error("Couldn't fetch id")
@@ -32,19 +30,26 @@ export const UserContextProvider = ({ children }: { children: React.ReactNode })
       return data.id
    }
 
-   useEffect(() => {
-      const getId = async () => {
-         const id = await fetchId()
-         const newUser = {
-            id,
-         }
-         setUser(newUser)
-         localStorage.setItem("user", JSON.stringify(newUser))
-      }
+   const [user, setUser] = useState<TUser | null>(() => {
+      const saved = localStorage.getItem("user");
+      return saved ? JSON.parse(saved) : null;
+   })
 
-      if (!user) {
+   useEffect(() => {
+      const stored = localStorage.getItem("user")
+
+      if (!stored) {
+         const getId = async () => {
+            const id = await fetchId()
+            const newUser = {
+               id,
+            }
+            setUser(newUser)
+            localStorage.setItem("user", JSON.stringify(newUser))
+         }
          getId()
       }
+
    }, [])
 
    return (

@@ -7,7 +7,6 @@ import { useRef } from "react"
 
 export default function Layout() {
    const { user } = useUserContext()
-   const { id } = user!
 
    const idRef = useRef<HTMLSpanElement>(null)
 
@@ -16,6 +15,7 @@ export default function Layout() {
       toast.success("ID copied")
    }
 
+   if (!user) return null
 
    return (
       <>
@@ -46,7 +46,7 @@ export default function Layout() {
 
                >
                   <Dot />
-                  <span>Your id: <span ref={idRef}>{id}</span></span>
+                  <span>Your id: <span ref={idRef}>{user?.id}</span></span>
                </p>
 
                <Outlet />

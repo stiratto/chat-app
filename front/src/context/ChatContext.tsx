@@ -1,8 +1,9 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import type { IChat } from "../interfaces/IMessage";
-interface IChatContext {
-   chats: IChat[] | null,
-   setChats: React.Dispatch<React.SetStateAction<IChat[] | null>>
+
+export interface IChatContext {
+   chats: IChat[],
+   setChats: React.Dispatch<React.SetStateAction<IChat[]>>
 }
 
 const ChatContext = createContext<IChatContext | null>(null)
@@ -12,20 +13,27 @@ export const useChatContext = () => {
    if (!context) {
       throw new Error('useChatContext must be used within chatcontext')
    }
-   return context 
+   return context
 }
 
-export const ChatContextProvider = ({children}: {children: React.ReactNode}) => {
-   const [chats, setChats] = useState<IChat[] | null>(() => {
-      return JSON.parse(localStorage.getItem('messages')!)
+export const ChatContextProvider = ({ children }: { children: React.ReactNode }) => {
+   const [chats, setChats] = useState<IChat[]>(() => {
+      try {
+         const stored = localStorage.getItem('messages')
+         console.log(stored)
+         return JSON.parse(stored!) ?? []
+      } catch (err) {
+         return []
+      }
    })
 
    useEffect(() => {
-      localStorage.setItem('messages', JSON.stringify(chats)) 
+      console.log("new chats:", chats)
+      localStorage.setItem('messages', JSON.stringify(chats))
    }, [chats])
 
    return (
-      <ChatContext.Provider value={{chats, setChats}}>
+      <ChatContext.Provider value={{ chats, setChats }}>
          {children}
       </ChatContext.Provider>
    )

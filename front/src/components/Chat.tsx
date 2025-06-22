@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from "react"
-
 import Message from "./Message"
 import { useUserContext } from "../context/UserContext"
 import type { IMessage } from "../interfaces/IMessage"
@@ -25,6 +24,7 @@ export default function Chat() {
    const sendMessage = (e: React.FormEvent<HTMLElement>) => {
       e.preventDefault()
       if (message.length === 0) return
+
 
       const newMessage: IMessage = {
          host: "host",
@@ -67,6 +67,7 @@ export default function Chat() {
       }
 
    }, [chats])
+
 
    useEffect(() => {
       messagesContainerRef.current?.scrollTo({ top: messagesContainerRef.current.scrollHeight })
