@@ -49,7 +49,8 @@ export const createHandlers = (ctx: HandlersContext): Record<string, Handler> =>
       // host que envia el mensaje
       const foundChat = ctx.chats?.find((chat) => chat.remoteId === data.from)
 
-      console.log(ctx.chats)
+      if (!foundChat) return
+
 
       // actualizar el chat que tiene esa id
       const newChats = ctx.chats?.map((chat) => {
@@ -70,15 +71,6 @@ export const createHandlers = (ctx: HandlersContext): Record<string, Handler> =>
          }
          return chat
       })
-      //
-      // ctx.setChats(prev =>
-      //    prev.map(chat =>
-      //       chat.remoteId === data.from
-      //          ? { ...chat, messages: [...chat.messages, newMessage] }
-      //          : chat
-      //    )
-      // )
-      //
 
       if (newChats) {
          ctx.setChats(newChats)

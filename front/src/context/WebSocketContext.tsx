@@ -36,6 +36,7 @@ export const WebSocketContextProvider = ({ children }: { children: ReactNode }) 
       const socket = new WebSocket(`${SOCKET_API_URL}/connect?userId=${id}`)
       setWebSocket(socket)
 
+
       // we can use useRef() (it has the most recent value no matter
       // what, doesn't relies on re-renders)
       // or use the context directly but state getters would be

@@ -1,39 +1,3 @@
-import http from "http"
-import { parse } from "url"
-import { send } from "./utils"
-
-// let's create a simple router from scratch that uses folder names as
-// routes, like next.js does
-//
-// we want:
-// - folder names as routes. (getId folder maps to /getId route)
-// - files names inside folder maps to logic. (index.ts inside getId should contain the routes controllers)
-// - we want to specify method post when registrating a new route,
-//    this way we could add headers and customize responses depending on
-//    the method
-//
-// 
-// a single route can contain various methods, each folder route will
-// have a file for each method (post.ts, get.ts, etc)
-//
-
-type Method = "POST" | "GET" | "PUT" | "DELETE" | "PATCH" | "WEBSOCKET"
-
-export class Router {
-  private routes: [];
-
-  constructor() {
-    this.routes = []
-    this.readRoutes()
-  }
-
-  // read folder names inside /routes
-  async readRoutes() {
-    const folderName = ""
-  }
-}
-
-
 export const router = (req: http.IncomingMessage, res: http.ServerResponse) => {
 
 
